@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1794311647352,
+      "tag": "0000_calendarios_inicial",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1794315163408,
+      "tag": "0001_eventos_publicos",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1794330323731,
+      "tag": "0002_capa_eventos",
+      "breakpoints": true
+    }
+  ]
+}
