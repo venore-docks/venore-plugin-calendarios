@@ -54,7 +54,13 @@ export default async function CalendariosAdminPage() {
       ) : (
         sectors.map((sector) => {
           const canEdit = sector.caps.edit;
-          const bases = sector.calendars.filter((calendar) => calendar.isBase).map((calendar) => ({ id: calendar.id, name: calendar.name }));
+          // O base pode ser de outro setor ("base geral"): as opções são todos os bases que a pessoa enxerga, os de
+          // outros setores com o nome do setor ao lado.
+          const bases = sectors.flatMap((owner) =>
+            owner.calendars
+              .filter((calendar) => calendar.isBase)
+              .map((calendar) => ({ id: calendar.id, name: owner.id === sector.id ? calendar.name : `${calendar.name} (${owner.name})` })),
+          );
           return (
             <section key={sector.id} className="space-y-3">
               <div className="flex flex-wrap items-center justify-between gap-2">

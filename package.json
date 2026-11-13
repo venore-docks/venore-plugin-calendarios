@@ -1,6 +1,6 @@
 {
   "name": "@venore/plugin-calendarios",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Calendários letivos impressos por setor: o setor edita, valida e publica o PDF/PNG final, com URL estável para os sites (plugin do Venore Docks).",
   "private": true,
   "type": "module",

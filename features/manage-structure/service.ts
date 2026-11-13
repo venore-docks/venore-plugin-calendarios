@@ -86,7 +86,7 @@ export async function createCalendar(actor: Actor, input: CreateCalendarInput): 
   if (!name || name.length > 120) return finish(failure("invalid_name", "Informe o nome do calendário (até 120 caracteres)."));
   if (!Number.isInteger(input.year) || input.year < 2000 || input.year > 2100) return finish(failure("invalid_year", "Informe um ano válido."));
 
-  const baseCheck = await checkBase(sector.id, null, input.baseCalendarId ?? null, input.isBase ?? false);
+  const baseCheck = await checkBase(null, input.baseCalendarId ?? null, input.isBase ?? false);
   if (!baseCheck.success) return finish(baseCheck);
 
   const existing = await db.select({ sortOrder: calCalendars.sortOrder }).from(calCalendars).where(eq(calCalendars.sectorId, sector.id));
@@ -122,8 +122,9 @@ export async function createCalendar(actor: Actor, input: CreateCalendarInput): 
   return finish({ success: true, data: created });
 }
 
+// O base pode ser de OUTRO setor: um "base geral" (feriados e recessos comuns da instituição) é herdado por
+// calendários de setores diferentes (Colégio e Faculdade). Quem edita o base é o setor dono dele.
 async function checkBase(
-  sectorId: string,
   selfId: string | null,
   baseCalendarId: string | null,
   isBase: boolean,
@@ -134,7 +135,7 @@ async function checkBase(
   if (baseCalendarId) {
     if (baseCalendarId === selfId) return failure("invalid_base", "Um calendário não pode herdar dele mesmo.");
     const base = await findCalendarById(baseCalendarId);
-    if (!base || base.sectorId !== sectorId) return failure("invalid_base", "O calendário-base precisa ser do mesmo setor.");
+    if (!base) return failure("invalid_base", "Calendário-base não encontrado.");
     if (!base.isBase) return failure("invalid_base", "Só um calendário marcado como base pode ser herdado.");
   }
   return { success: true, data: undefined };
@@ -154,7 +155,7 @@ export async function updateCalendar(actor: Actor, input: UpdateCalendarInput): 
   const fileNameTemplate = input.fileNameTemplate === undefined ? calendar.fileNameTemplate : input.fileNameTemplate.trim();
   if (!fileNameTemplate || fileNameTemplate.length > 200) return finish(failure("invalid_file_name", "Informe o modelo do nome do arquivo."));
 
-  const baseCheck = await checkBase(calendar.sectorId, calendar.id, baseCalendarId, isBase);
+  const baseCheck = await checkBase(calendar.id, baseCalendarId, isBase);
   if (!baseCheck.success) return finish(baseCheck);
 
   if (calendar.isBase && !isBase) {

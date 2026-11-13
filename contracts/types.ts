@@ -112,7 +112,7 @@ export type CalendarRecord = {
   sectorId: string;
   slug: string;
   name: string;
-  // Calendário-base de quem herdar categorias e marcações (mesmo setor). null = independente.
+  // Calendário-base de quem herdar categorias e marcações (pode ser de outro setor: base geral). null = independente.
   baseCalendarId: string | null;
   // Base = só serve de fonte para os outros: não passa por aprovação nem gera PDF.
   isBase: boolean;

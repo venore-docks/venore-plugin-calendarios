@@ -14,7 +14,7 @@ Substitui o fluxo manual: marketing diagramando o PDF a cada ano e subindo o PNG
 |---|---|
 | **Setor** | Dono dos calendários e de quem os mantém. Unidade de permissão. |
 | **Calendário** | Um PDF por ano (Ensino Fundamental I, Fidelis EaD…). Pertence a um setor. |
-| **Calendário-base** | Opcional, por setor: guarda o que é geral — feriados, férias, recessos. Os calendários que **herdam** dele recebem essas datas e categorias e **acrescentam** as suas por cima, mesmo na mesma data (férias no base + reunião de conselho no calendário = as duas). Para tirar uma categoria do base num dia, o calendário a exclui (borracha ou lixinho). Não é validado nem publicado. |
+| **Calendário-base** | Opcional: guarda o que é geral — feriados, férias, recessos. Os calendários que **herdam** dele recebem essas datas e categorias e **acrescentam** as suas por cima, mesmo na mesma data (férias no base + reunião de conselho no calendário = as duas). Para tirar uma categoria do base num dia, o calendário a exclui (borracha ou lixinho). Não é validado nem publicado. Pode ser de **outro setor**: um **base geral** (feriados e recessos da instituição) é herdado por calendários do Colégio e da Faculdade — editou o base, todos os que herdam dele mudam (a herança é resolvida a cada leitura, ano a ano). |
 | **Edição** | Calendário × ano. Tem o documento completo, versão (lock otimista), histórico e revisões. |
 | **Categoria** | Uma "legenda": cor do dia + se conta como dia letivo (`off` feriado/recesso, `on` sábado letivo, `none` só informa). Uma data aceita **até 3 categorias** (o círculo sai repartido). |
 | **Evento público** | O que as TVs e o site anunciam (título, tema/descrição, local, horário). É do **setor**, separado do texto impresso, e pode ser editado a qualquer momento sem refazer a validação do PDF. |
@@ -114,7 +114,7 @@ Os eventos aparecem em **Próximos eventos** na página `/calendarios` e aliment
 
 ## Instalação numa instância
 
-1. Core: dependência `@venore/plugin-calendarios` no `package.json` (tag `v0.2.0`) e `calendarios` em
+1. Core: dependência `@venore/plugin-calendarios` no `package.json` (tag `v0.3.0`) e `calendarios` em
    `instances/<instância>.json`; deploy. Para as TVs, o Broadcast na versão **1.9.16** ou mais nova.
 2. `/admin/plugins` → **Instalar**, marcando **Popular com dados de exemplo** (seed "Calendários de 2026":
    Colégio Erasto Gaertner — base + 4 calendários — e Faculdade Fidelis — presencial e EaD).

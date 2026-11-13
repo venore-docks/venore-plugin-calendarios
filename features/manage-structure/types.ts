@@ -6,7 +6,7 @@ export type CreateCalendarInput = {
   sectorId: string;
   name: string;
   year: number;
-  // Herda categorias e datas deste calendário-base (mesmo setor).
+  // Herda categorias e datas deste calendário-base (de qualquer setor).
   baseCalendarId?: string | null;
   isBase?: boolean;
 };

@@ -108,6 +108,29 @@ describe("calendários — fluxo (PGlite)", () => {
     expect(await updateCalendarHandler({ calendarId: base.id, isBase: false })).toMatchObject({ error: { code: "calendarios.base_in_use" } });
   });
 
+  it("um base de OUTRO setor pode ser herdado (base geral) e o herdeiro vê as datas dele", async () => {
+    asAdmin();
+    const other = ok(await createSectorHandler({ name: "Faculdade Teste" }));
+    ok(await setMemberHandler({ sectorId: other.id, userId: ana.id, canEdit: true, canApprove: false, canPublish: false }));
+
+    asReader(ana);
+    const created = ok(await createCalendarHandler({ sectorId: other.id, name: "Presencial", year: 2026, baseCalendarId: base.id }));
+    expect(created.calendar.baseCalendarId).toBe(base.id);
+    expect(created.calendar.sectorId).toBe(other.id);
+    const view = ok(await getEditionHandler({ editionId: created.edition.id }));
+    expect(view.baseHasEdition).toBe(true);
+    expect(view.resolved.marks.map((mark) => mark.date)).toContain("2026-02-17");
+
+    // Só um calendário marcado como base pode ser herdado, venha de onde vier.
+    expect(await createCalendarHandler({ sectorId: other.id, name: "Outro", year: 2026, baseCalendarId: created.calendar.id })).toMatchObject({
+      error: { code: "calendarios.invalid_base" },
+    });
+
+    // Setor descartável: os testes seguintes esperam só o "Colégio Teste".
+    asAdmin();
+    expect(await deleteSectorHandler({ sectorId: other.id, confirmName: "Faculdade Teste" })).toMatchObject({ success: true });
+  });
+
   it("quem só lê não vê rascunho nem edita; salvar sobe a versão e recusa versão velha", async () => {
     asReader(dan);
     expect(await getEditionHandler({ editionId: edition.id })).toMatchObject({ error: { code: "calendarios.forbidden_sector" } });

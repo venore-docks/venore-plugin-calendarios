@@ -6,7 +6,7 @@ export const calendariosManifest: PluginManifest = {
   manifestVersion: "1.0.0",
   key: "calendarios",
   name: "Calendários",
-  version: "0.2.0",
+  version: "0.3.0",
   description:
     "Calendários letivos impressos por setor: o setor marca as datas, valida e publica o PDF e o PNG finais (link estável e página para embutir nos sites) e cadastra os eventos com tema que alimentam as TVs do Broadcast.",
   compatibility: { coreVersion: ">=2.0.0 <3.0.0" },

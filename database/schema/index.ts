@@ -50,7 +50,7 @@ export const calMembers = calendariosSchema.table(
 );
 
 // Calendário = um PDF por ano de um setor (Ensino Fundamental I, Fidelis EaD…). Um calendário pode
-// herdar categorias e datas de um "base" do mesmo setor (feriados e recessos comuns); o base não é
+// herdar categorias e datas de um "base" (do mesmo setor ou de um base geral de outro) (feriados e recessos comuns); o base não é
 // impresso nem aprovado.
 export const calCalendars = calendariosSchema.table(
   "calendars",

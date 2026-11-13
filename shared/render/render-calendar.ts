@@ -41,6 +41,8 @@ type Mode = {
   titleTop: number;
   subtitleTop: number;
   firstRowY: number;
+  // Largura máxima do logo dentro do disco (fração do diâmetro).
+  logoScale: number;
 };
 
 const COMPACT: Mode = {
@@ -52,6 +54,7 @@ const COMPACT: Mode = {
   titleTop: 134.45,
   subtitleTop: 162.56,
   firstRowY: 194.94,
+  logoScale: 0.7,
 };
 const WITH_NOTES: Mode = {
   notes: true,
@@ -62,6 +65,8 @@ const WITH_NOTES: Mode = {
   titleTop: 111.78,
   subtitleTop: 139.88,
   firstRowY: 157.41,
+  // O logo da Fidelis ocupa ~84% do disco no PDF do marketing.
+  logoScale: 0.8,
 };
 
 const color = (value: string | undefined, fallback: string) => (value && HEX_COLOR.test(value) ? value : fallback);
@@ -78,7 +83,7 @@ body { font-family: "Montserrat", "Helvetica", sans-serif; }
 .title .yr { font-weight: 800; font-style: italic; }
 .subtitle { font-weight: 600; font-size: 10pt; line-height: 13.29pt; left: 28.35pt; color: #231f20; }
 .disc { position: absolute; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
-.disc img { display: block; max-width: 70%; max-height: 70%; }
+.disc img { display: block; }
 .month { position: absolute; width: ${BLOCK_WIDTH}pt; }
 .month .name { position: absolute; left: 0; right: 0; top: 0; text-align: center; font-size: 9pt; line-height: 9.69pt; font-weight: 400; }
 .month .rule { position: absolute; left: 0; right: 0; top: 11.46pt; height: 0.5pt; }
@@ -91,7 +96,7 @@ body { font-family: "Montserrat", "Helvetica", sans-serif; }
 .month .d.sun { color: #e98a90; }
 .month .d.out { color: #e2e3e4; }
 .month .d i { display: flex; align-items: center; justify-content: center; width: 15.5pt; height: 15.5pt; border-radius: 50%; font-style: italic; color: #fff; }
-.month .notes { position: absolute; left: 0; width: ${BLOCK_WIDTH}pt; font-size: 5pt; line-height: 6pt; font-weight: 400; color: #231f20; white-space: normal; }
+.month .notes { position: absolute; left: 0; width: ${BLOCK_WIDTH}pt; font-size: var(--nf, 5pt); line-height: var(--nl, 6pt); font-weight: 400; color: #231f20; white-space: normal; }
 .month .notes b { font-weight: 700; }
 .info { position: absolute; left: 28.35pt; top: 649.13pt; width: ${CONTENT_WIDTH}pt; height: 60.15pt; padding: 0 8.5pt; display: flex; flex-direction: column; justify-content: center; font-weight: 300; font-size: 8pt; line-height: 9.6pt; }
 .info b { font-weight: 700; }
@@ -124,12 +129,12 @@ export function renderCalendarDocument(content: CalendarContent, assets: RenderA
     if (types.length > 0) typesByDate.set(date, types);
   }
 
-  const rowYs = monthRowPositions(content, mode, months);
+  const { ys: rowYs, noteScale } = monthRowPositions(content, mode, months);
   const pieces = [
     renderHeader(mode, assets, primary),
     renderTitle(content, mode, titleColor, accent),
     renderDisc(mode, assets, discColor),
-    ...months.map((month, index) => renderMonth(content, mode, month, firstYear, index, rowYs, counts.perMonth, typesByDate, typeByKey, { primary, header })),
+    ...months.map((month, index) => renderMonth(content, mode, month, firstYear, index, rowYs, noteScale, counts.perMonth, typesByDate, typeByKey, { primary, header })),
     mode.notes ? "" : renderInfo(content, primary, soft, header),
     mode.notes ? "" : renderBars(content, accent),
     mode.notes ? "" : renderLegend(content),
@@ -170,26 +175,44 @@ function renderTitle(content: CalendarContent, mode: Mode, titleColor: string, a
 function renderDisc(mode: Mode, assets: RenderAssets, discColor: string): string {
   if (!assets.logo) return "";
   const { x, y, r } = mode.disc;
-  return `<div class="disc" style="left:${x - r}pt;top:${y - r}pt;width:${r * 2}pt;height:${r * 2}pt;background:${discColor}"><img src="${escapeHtml(assets.logo)}" alt=""></div>`;
+  return `<div class="disc" style="left:${x - r}pt;top:${y - r}pt;width:${r * 2}pt;height:${r * 2}pt;background:${discColor}"><img src="${escapeHtml(assets.logo)}" alt="" style="max-width:${mode.logoScale * 100}%;max-height:${mode.logoScale * 100}%"></div>`;
 }
 
-// Altura estimada das notas de um mês (linhas de 6 pt; nota longa quebra em duas).
-function noteLines(content: CalendarContent, month: YearMonth): number {
+// Notas dos meses: 5 pt / 6 pt de entrelinha, e encolhem (como no PDF do marketing, que desce até 4,66 pt)
+// quando o ano tem muito texto. O último texto termina em NOTES_BOTTOM (o original: no máx. 759 pt), deixando
+// ar até "TOTAL DE DIAS LETIVOS" (784 pt) e a assinatura (792 pt); entre as linhas de meses sobra ao menos MIN_ROW_GAP.
+const NOTE_FONT = 5;
+const NOTE_LINE = 6;
+const MIN_NOTE_SCALE = 0.8;
+const NOTES_BOTTOM = 762;
+const MIN_ROW_GAP = 8;
+
+// Altura estimada das notas de um mês, em linhas (nota longa quebra: ~44 caracteres por linha a 5 pt).
+function noteLines(content: CalendarContent, month: YearMonth, scale: number): number {
   const key = `${month.year}-${String(month.month).padStart(2, "0")}`;
-  return buildMonthNoteItems(content, key).reduce((lines, note) => lines + Math.max(1, Math.ceil(`${note.days} - ${note.text}`.length / 36)), 0);
+  const perLine = 44 / scale;
+  return buildMonthNoteItems(content, key).reduce((lines, note) => lines + Math.max(1, Math.ceil(`${note.days} - ${note.text}`.length / perLine)), 0);
 }
+
+type RowLayout = { ys: number[]; noteScale: number };
 
 // Y de cada uma das 3 linhas de meses. Compacto: grade fixa. Com notas: cada linha ocupa a grade +
-// as notas mais longas da linha, e a sobra da página é repartida entre as linhas.
-function monthRowPositions(content: CalendarContent, mode: Mode, months: YearMonth[]): number[] {
-  if (!mode.notes) return [0, 1, 2].map((row) => mode.firstRowY + row * 150.81);
+// as notas mais longas da linha; a sobra da página é repartida entre as linhas e, se não couber, as notas encolhem.
+function monthRowPositions(content: CalendarContent, mode: Mode, months: YearMonth[]): RowLayout {
+  if (!mode.notes) return { ys: [0, 1, 2].map((row) => mode.firstRowY + row * 150.81), noteScale: 1 };
   const gridHeight = 38.39 + 6 * mode.cellPitch;
-  const needs = [0, 1, 2].map((row) => gridHeight + 2 + 6 * Math.max(0, ...months.slice(row * 4, row * 4 + 4).map((month) => noteLines(content, month))));
-  const available = 775 - mode.firstRowY;
-  const gap = Math.min(60, Math.max(6, (available - needs.reduce((sum, need) => sum + need, 0)) / 2));
+  const needsAt = (scale: number) =>
+    [0, 1, 2].map((row) => gridHeight + 2 + NOTE_LINE * scale * Math.max(0, ...months.slice(row * 4, row * 4 + 4).map((month) => noteLines(content, month, scale))));
+  const total = (needs: number[]) => needs.reduce((sum, need) => sum + need, 0);
+  const available = NOTES_BOTTOM - mode.firstRowY;
+
+  let noteScale = 1;
+  while (noteScale > MIN_NOTE_SCALE && total(needsAt(noteScale)) + 2 * MIN_ROW_GAP > available) noteScale = Math.round((noteScale - 0.01) * 100) / 100;
+  const needs = needsAt(noteScale);
+  const gap = Math.min(60, Math.max(4, (available - total(needs)) / 2));
   const ys = [mode.firstRowY];
   for (let row = 1; row < 3; row += 1) ys.push(ys[row - 1]! + needs[row - 1]! + gap);
-  return ys;
+  return { ys, noteScale };
 }
 
 function renderMonth(
@@ -199,6 +222,7 @@ function renderMonth(
   firstYear: number,
   index: number,
   rowYs: number[],
+  noteScale: number,
   perMonth: Record<string, number>,
   typesByDate: Map<string, MarkType[]>,
   typeByKey: Map<string, MarkType>,
@@ -231,7 +255,7 @@ function renderMonth(
         .join("")
     : "";
 
-  return `<div class="month" style="left:${x}pt;top:${y}pt;--pitch:${mode.cellPitch}pt;color:${colors.primary}">
+  return `<div class="month" style="left:${x}pt;top:${y}pt;--pitch:${mode.cellPitch}pt;--nf:${NOTE_FONT * noteScale}pt;--nl:${NOTE_LINE * noteScale}pt;color:${colors.primary}">
 <div class="name">${escapeHtml(name)}</div><div class="rule" style="background:${colors.primary}"></div>
 ${content.display.schoolDayCounts && days ? `<div class="count">${days} ${days === 1 ? "dia letivo" : "dias letivos"}</div>` : ""}
 <div class="band" style="background:${colors.header}">${["D", "S", "T", "Q", "Q", "S", "S"].map((label) => `<span>${label}</span>`).join("")}</div>
